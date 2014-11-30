@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+#
+# Some fucking nasty Perl to hack together a Markdown preprocessor.
+#
+
+# TODO: still removes in code blocks
+# TODO: it's Perl
+
+# but holy shit this works lol
+
+remove_chars=",':\\\">?"
+
+bad_char=' '
+replace_char='-'
+
+no_urls="((?!https?:\/\/).*)"
+
+wikipedia_name="!Wikipedia"
+wikipedia_url="http:\/\/en.wikipedia.org\/wiki"
+
+## -e explanations
+# 1. fix [[wiki links]] which go over 2 lines
+# 2. [[Wiki link!]] --> [Wiki link!](wiki-link)
+# wikipedia
+# 3. replace certain chars (e.g. spaces to hyphens) in relative links
+# 4. remove certain chars in relative links
+# 5. add .html to relative links
+perl -0p \
+    -e "s/\[\[([^\]]*)\n */\[\[\1 /;" \
+    "$1" | \
+    perl -p \
+        -e "s/\[\[(.*)\]\]/\[\1\]\(\L\1\)/;" \
+        -e "s/\[(.*)\]\(${wikipedia_name}\)/\[\1\]\($wikipedia_url\/\1\)/;" \
+        -e "s/\]\(${no_urls}\)/(\$a=$&)=~s%${bad_char}%${replace_char}%g;\$a/eg;" \
+        -e "s/\]\(${no_urls}\)/(\$a=$&)=~s%[${remove_chars}]%%g;\$a/eg;" \
+        -e "s/\]\(${no_urls}\)/\]\(\1\.html\)/;"
